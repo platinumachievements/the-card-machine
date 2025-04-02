@@ -8,7 +8,16 @@ git add .                                # Stage all changes
 git commit -m "feat: your message here"  # Commit with a message
 git push origin main                     # Push to GitHub
 ```
-
+```bash
+it commit -m "chore: MVP progress update"
+git commit -m "wip: continue MVP implementation"
+git commit -m "feat: MVP development progress"
+git commit -m "update: ongoing MVP development"
+git commit -m "progress: MVP feature implementations"
+git commit -m "wip: user interface improvements"
+git commit -m "wip: backend functionality"
+git commit -m "progress: authentication system"
+```
 ## 🔍 Check Repository Status
 
 ```bash
