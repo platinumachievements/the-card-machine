@@ -44,66 +44,72 @@
 		calculating = true;
 
 		try {
-			// Reset to max size first
-			currentFontSize = maxFontSize;
-			textElement.style.fontSize = `${currentFontSize}px`;
-
 			// Reset any previous overflow settings
 			textElement.style.maxHeight = '';
 			textElement.style.overflow = '';
-
-			// Set a consistent line height based on font size
-			const lineHeight = Math.max(currentFontSize * 1.2, 1);
-			textElement.style.lineHeight = `${lineHeight}px`;
 
 			// Get available space (accounting for padding)
 			const availableWidth = width - paddingX * 2;
 			const availableHeight = height - paddingY * 2;
 
-			// Calculate maximum height based on maxLines
-			const maxHeightForLines = lineHeight * maxLines;
-			const effectiveMaxHeight = Math.min(availableHeight, maxHeightForLines);
+			// Binary search for optimal font size
+			let low = 1; // Absolute minimum font size
+			let high = maxFontSize;
+			let optimalFontSize = minFontSize; // Default to minFontSize if nothing fits
 
-			// Check if text overflows at max size
-			while (
-				currentFontSize > minFontSize &&
-				(textElement.scrollHeight > effectiveMaxHeight || textElement.scrollWidth > availableWidth)
-			) {
-				// Reduce font size by 1px and check again
-				currentFontSize -= 1;
-				textElement.style.fontSize = `${currentFontSize}px`;
+			const isFontSizeValid = (fontSize: number): boolean => {
+				// Apply font size
+				textElement.style.fontSize = `${fontSize}px`;
 
-				// Update line height as font size changes
-				const newLineHeight = Math.max(currentFontSize * 1.2, 1);
-				textElement.style.lineHeight = `${newLineHeight}px`;
-			}
+				// Calculate and apply line height
+				const lineHeight = Math.max(fontSize * 1.2, 1);
+				textElement.style.lineHeight = `${lineHeight}px`;
 
-			// Now check if we've hit minFontSize but still have too many lines
-			// If so, keep reducing font size until we meet maxLines constraint
-			const currentLineHeight = parseFloat(getComputedStyle(textElement).lineHeight);
-			const currentMaxHeight = currentLineHeight * maxLines;
+				// Check width constraint
+				if (textElement.scrollWidth > availableWidth) {
+					return false;
+				}
 
-			// Count approximate number of lines
-			const approxLines = Math.ceil(textElement.scrollHeight / currentLineHeight);
+				// Check max lines constraint
+				const maxHeightForLines = lineHeight * maxLines;
+				if (textElement.scrollHeight > maxHeightForLines) {
+					return false;
+				}
 
-			if (approxLines > maxLines) {
-				// We hit minFontSize but still have too many lines, continue reducing
-				while (textElement.scrollHeight > currentMaxHeight && currentFontSize > 1) {
-					currentFontSize -= 1;
-					textElement.style.fontSize = `${currentFontSize}px`;
+				// Check height constraint
+				if (textElement.scrollHeight > availableHeight) {
+					return false;
+				}
 
-					// Update line height
-					const reducedLineHeight = Math.max(currentFontSize * 1.2, 1);
-					textElement.style.lineHeight = `${reducedLineHeight}px`;
+				// All constraints satisfied
+				return true;
+			};
+
+			// Binary search to find maximum valid font size
+			while (low <= high) {
+				const mid = Math.floor((low + high) / 2);
+
+				if (isFontSizeValid(mid)) {
+					// This size works, try to find a larger one
+					optimalFontSize = mid;
+					low = mid + 1;
+				} else {
+					// Too big, try smaller
+					high = mid - 1;
 				}
 			}
 
-			// Always enforce maximum lines by setting max-height
-			const finalLineHeight = parseFloat(getComputedStyle(textElement).lineHeight);
-			const finalMaxHeight = finalLineHeight * maxLines;
+			// Apply the optimal font size found
+			currentFontSize = optimalFontSize;
+			textElement.style.fontSize = `${currentFontSize}px`;
 
-			// Always apply max-height to enforce max lines
-			textElement.style.maxHeight = `${finalMaxHeight}px`;
+			// Recalculate and set final line height
+			const finalLineHeight = Math.max(currentFontSize * 1.2, 1);
+			textElement.style.lineHeight = `${finalLineHeight}px`;
+
+			// Apply max-height to enforce max lines
+			const maxHeight = finalLineHeight * maxLines;
+			textElement.style.maxHeight = `${maxHeight}px`;
 			textElement.style.overflow = 'hidden';
 		} finally {
 			calculating = false;
