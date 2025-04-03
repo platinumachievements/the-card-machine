@@ -10,33 +10,46 @@
 		minFontSize = 8,
 		paddingX = 4,
 		paddingY = 2,
-		alignH = 'center', // 'left', 'center', 'right'
-		alignV = 'middle', // 'top', 'middle', 'bottom'
+		alignH = 'center',
+		alignV = 'middle',
 		maxLines = 3,
 		className = '',
 		bold = false,
 		italic = false,
-		color = 'inherit'
+		color = 'inherit',
+		reProcess = true,
+		currentFontSize = $bindable(maxFontSize)
 	} = $props();
 
+	// Validate props after declaration
+	width = Math.max(200, width);
+	height = Math.max(40, height);
+	maxFontSize = Math.max(24, maxFontSize);
+	minFontSize = Math.min(Math.max(8, minFontSize), maxFontSize);
+
 	let textElement: HTMLDivElement;
-	let currentFontSize = $state(maxFontSize);
+	let containerElement: HTMLDivElement;
 	let mounted = $state(false);
 	let calculating = $state(false);
-
-	// Simple cache to prevent recalculating when nothing changes
+	let processed = $state(false);
 	let prevProps = $state('');
 
-	// Update the props string for comparison
 	function getPropsString() {
-		return `${text}_${width}_${height}_${maxFontSize}_${minFontSize}_${paddingX}_${paddingY}_${maxLines}_${bold}_${italic}`;
+		return `${text}_${width}_${height}_${maxFontSize}_${minFontSize}_${maxLines}`;
 	}
 
-	// Calculate the optimal font size
 	function calculateOptimalFontSize() {
 		if (!textElement || calculating) return;
 
-		// Check if props have changed
+		if (!text.trim()) {
+			currentFontSize = maxFontSize;
+			textElement.style.fontSize = `${currentFontSize}px`;
+			processed = true;
+			return;
+		}
+
+		if (processed && !reProcess) return;
+
 		const newPropsString = getPropsString();
 		if (newPropsString === prevProps) return;
 		prevProps = newPropsString;
@@ -44,79 +57,67 @@
 		calculating = true;
 
 		try {
-			// Reset any previous overflow settings
 			textElement.style.maxHeight = '';
 			textElement.style.overflow = '';
 
-			// Get available space (accounting for padding)
+			// Text can always wrap
+			textElement.style.whiteSpace = 'normal';
+			textElement.style.textOverflow = 'clip';
+
 			const availableWidth = width - paddingX * 2;
 			const availableHeight = height - paddingY * 2;
+			const lineHeightRatio = 1.3;
+			const tolerance = 1; // Allow 1px tolerance for rendering quirks
 
-			// Binary search for optimal font size
-			let low = 1; // Absolute minimum font size
+			let low = minFontSize;
 			let high = maxFontSize;
-			let optimalFontSize = minFontSize; // Default to minFontSize if nothing fits
+			let optimalFontSize = minFontSize;
 
 			const isFontSizeValid = (fontSize: number): boolean => {
-				// Apply font size
 				textElement.style.fontSize = `${fontSize}px`;
-
-				// Calculate and apply line height
-				const lineHeight = Math.max(fontSize * 1.2, 1);
+				const lineHeight = Math.max(fontSize * lineHeightRatio, 1);
 				textElement.style.lineHeight = `${lineHeight}px`;
 
-				// Check width constraint
-				if (textElement.scrollWidth > availableWidth) {
-					return false;
-				}
-
-				// Check max lines constraint
+				const scrollWidth = textElement.scrollWidth;
+				const scrollHeight = textElement.scrollHeight;
 				const maxHeightForLines = lineHeight * maxLines;
-				if (textElement.scrollHeight > maxHeightForLines) {
-					return false;
-				}
 
-				// Check height constraint
-				if (textElement.scrollHeight > availableHeight) {
-					return false;
-				}
+				if (scrollWidth > availableWidth) return false;
 
-				// All constraints satisfied
-				return true;
+				// Add tolerance to height check
+				return scrollHeight <= Math.min(maxHeightForLines, availableHeight) + tolerance;
 			};
 
-			// Binary search to find maximum valid font size
+			// Binary search with explicit tracking of largest valid size
 			while (low <= high) {
 				const mid = Math.floor((low + high) / 2);
-
 				if (isFontSizeValid(mid)) {
-					// This size works, try to find a larger one
 					optimalFontSize = mid;
-					low = mid + 1;
+					low = mid + 1; // Try larger
 				} else {
-					// Too big, try smaller
-					high = mid - 1;
+					high = mid - 1; // Try smaller
 				}
 			}
 
-			// Apply the optimal font size found
-			currentFontSize = optimalFontSize;
+			// Apply the optimal size
+			if (!processed || reProcess) {
+				currentFontSize = optimalFontSize;
+			}
 			textElement.style.fontSize = `${currentFontSize}px`;
-
-			// Recalculate and set final line height
-			const finalLineHeight = Math.max(currentFontSize * 1.2, 1);
+			const finalLineHeight = Math.max(currentFontSize * lineHeightRatio, 1);
 			textElement.style.lineHeight = `${finalLineHeight}px`;
 
-			// Apply max-height to enforce max lines
 			const maxHeight = finalLineHeight * maxLines;
 			textElement.style.maxHeight = `${maxHeight}px`;
 			textElement.style.overflow = 'hidden';
+
+			processed = true;
 		} finally {
 			calculating = false;
 		}
 	}
 
-	// Get alignment classes from props
+	// Alignment class helpers
 	function getVerticalClass(align: string): string {
 		const classes = {
 			top: 'items-start',
@@ -150,17 +151,16 @@
 		}, 10);
 	}
 
-	// Calculate font size when component mounts
 	onMount(() => {
 		mounted = true;
 		debouncedCalculate();
+		return () => {
+			if (timeout) clearTimeout(timeout);
+		};
 	});
 
-	// Track changes to all props and recalculate as needed
 	$effect(() => {
-		// This creates dependencies on all props without needing to assign to a variable
 		void getPropsString();
-
 		if (mounted && textElement) {
 			debouncedCalculate();
 		}
@@ -168,6 +168,7 @@
 </script>
 
 <div
+	bind:this={containerElement}
 	class="flex-text-container {getVerticalClass(alignV)} {getHorizontalClass(alignH)} {className}"
 	style="
 		width: {width}px;
@@ -181,6 +182,9 @@
 		style="
 			font-size: {currentFontSize}px;
 			color: {color};
+			width: {width - 2 * paddingX}px;
+			max-height: {height - 2 * paddingY}px;
+			box-sizing: border-box;
 		"
 	>
 		{text}
@@ -195,9 +199,8 @@
 	}
 
 	.flex-text {
-		width: 100%;
 		word-break: break-word;
 		overflow: hidden;
-		text-overflow: ellipsis;
+		/* background-color: rgba(255, 0, 0, 0.1); /* Temporary for debugging */
 	}
 </style>

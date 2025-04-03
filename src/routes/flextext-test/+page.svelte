@@ -14,6 +14,13 @@
 	let dynamicItalic = false;
 	let dynamicAlignH = 'center';
 	let dynamicAlignV = 'middle';
+	let dynamicReProcess = true;
+	let dynamicCurrentFontSize = dynamicMaxFontSize; // Initialize to maxFontSize
+
+	// Ensure minFontSize <= maxFontSize
+	$: if (dynamicMinFontSize > dynamicMaxFontSize) {
+		dynamicMinFontSize = dynamicMaxFontSize;
+	}
 
 	// Basic test cases
 	const testCases = [
@@ -43,6 +50,26 @@
 			height: 60,
 			maxFontSize: 18,
 			minFontSize: 6
+		},
+		{
+			id: 6,
+			title: 'Large font test: 64px',
+			text: 'This text should fit in 3 lines with a large font',
+			width: 492,
+			height: 300,
+			maxFontSize: 64,
+			minFontSize: 8,
+			maxLines: 3
+		},
+		{
+			id: 7,
+			title: 'Large font test: 65px',
+			text: 'This text should fit in 3 lines with a large font',
+			width: 492,
+			height: 300,
+			maxFontSize: 65,
+			minFontSize: 8,
+			maxLines: 3
 		}
 	];
 </script>
@@ -136,6 +163,13 @@
 							<span class="label-text">Italic</span>
 						</label>
 					</div>
+
+					<div class="form-control">
+						<label class="label cursor-pointer justify-start gap-2">
+							<input type="checkbox" class="checkbox" bind:checked={dynamicReProcess} />
+							<span class="label-text">Re-process on Change</span>
+						</label>
+					</div>
 				</div>
 			</div>
 
@@ -158,16 +192,21 @@
 						alignV={dynamicAlignV}
 						bold={dynamicBold}
 						italic={dynamicItalic}
+						reProcess={dynamicReProcess}
+						bind:currentFontSize={dynamicCurrentFontSize}
 					/>
 				</div>
 				<div class="mt-2 text-sm">
 					Container: {dynamicWidth}px × {dynamicHeight}px
 				</div>
+				<div class="mt-1 text-sm font-medium text-purple-600">
+					Calculated Font Size: {dynamicCurrentFontSize}px
+				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Simple test case to verify the component works -->
+	<!-- Basic Test -->
 	<div class="mb-8 rounded border p-4">
 		<h2 class="mb-2 text-xl">Basic Test</h2>
 		<div style="border: 1px dashed #999; width: 200px; height: 100px; position: relative;">
@@ -177,11 +216,13 @@
 				height={100}
 				maxFontSize={20}
 				minFontSize={10}
+				paddingX={4}
+				paddingY={2}
 			/>
 		</div>
 	</div>
 
-	<!-- Only add the interactive test section if basic test works -->
+	<!-- Test Cases -->
 	<div class="mb-8 rounded border p-4">
 		<h2 class="mb-2 text-xl">Test Cases</h2>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -197,10 +238,16 @@
 							height={test.height}
 							maxFontSize={test.maxFontSize}
 							minFontSize={test.minFontSize}
+							maxLines={test.maxLines ?? 3}
+							paddingX={4}
+							paddingY={2}
 						/>
 					</div>
 					<div class="mt-1 text-xs">
 						Size: {test.width}×{test.height}px
+						{#if test.maxLines}
+							<span class="ml-1">({test.maxLines} lines)</span>
+						{/if}
 					</div>
 				</div>
 			{/each}
