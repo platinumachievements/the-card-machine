@@ -158,32 +158,6 @@
 					</div>
 
 					<div class="form-control">
-						<label class="label" for="dynamic-padding-x">Padding X (px)</label>
-						<input
-							id="dynamic-padding-x"
-							type="range"
-							min="0"
-							max="20"
-							value={dynamicPaddingX}
-							oninput={(e) => (dynamicPaddingX = parseInt(e.currentTarget.value))}
-						/>
-						<div class="text-center">{dynamicPaddingX}px</div>
-					</div>
-
-					<div class="form-control">
-						<label class="label" for="dynamic-padding-y">Padding Y (px)</label>
-						<input
-							id="dynamic-padding-y"
-							type="range"
-							min="0"
-							max="20"
-							value={dynamicPaddingY}
-							oninput={(e) => (dynamicPaddingY = parseInt(e.currentTarget.value))}
-						/>
-						<div class="text-center">{dynamicPaddingY}px</div>
-					</div>
-
-					<div class="form-control">
 						<label class="label" for="dynamic-mode">Text Mode</label>
 						<select
 							id="dynamic-mode"
@@ -297,8 +271,6 @@
 							mode={dynamicMode}
 							alignHoriz={dynamicAlignHoriz}
 							alignVert={dynamicAlignVert}
-							paddingX={dynamicPaddingX}
-							paddingY={dynamicPaddingY}
 							widthOnly={dynamicWidthOnly}
 							useFlexbox={dynamicUseFlexbox}
 							bold={dynamicBold}
@@ -326,9 +298,7 @@
 								mode: dynamicMode,
 								alignHoriz: dynamicAlignHoriz,
 								alignVert: dynamicAlignVert,
-								widthOnly: dynamicWidthOnly,
-								paddingX: dynamicPaddingX,
-								paddingY: dynamicPaddingY
+								widthOnly: dynamicWidthOnly
 							}}
 						>
 							{dynamicText}
