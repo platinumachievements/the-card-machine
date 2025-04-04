@@ -1,5 +1,5 @@
 <script lang="ts">
-	import FlexText from '$lib/FlexText.svelte';
+	import TextFit from '$lib/TextFit.svelte';
 
 	// Position type
 	type Position = 'top' | 'center' | 'bottom';
@@ -45,15 +45,6 @@
 				return 'center';
 		}
 	}
-
-	// Update functions
-	function updateTitlePosition(e: Event) {
-		selectedTitlePosition = (e.target as HTMLSelectElement).value as Position;
-	}
-
-	function updateDescPosition(e: Event) {
-		selectedDescPosition = (e.target as HTMLSelectElement).value as Position;
-	}
 </script>
 
 <h1 class="mb-8 text-3xl font-bold">The Card Machine</h1>
@@ -79,13 +70,13 @@
 			<div
 				class="absolute z-10 flex w-full justify-center {getPositionClasses(card.titlePosition)}"
 			>
-				<FlexText
+				<TextFit
 					text={card.title}
 					width={200}
 					height={40}
 					maxFontSize={24}
 					minFontSize={10}
-					maxLines={1}
+					mode="single"
 					bold={true}
 					color="white"
 					className="text-shadow"
@@ -98,13 +89,13 @@
 					card.descriptionPosition
 				)}"
 			>
-				<FlexText
+				<TextFit
 					text={card.description}
 					width={200}
 					height={60}
 					maxFontSize={16}
 					minFontSize={8}
-					maxLines={3}
+					mode="multi"
 					color="white"
 					className="text-shadow"
 				/>
@@ -124,11 +115,12 @@
 		<div class="card-body">
 			<h2 class="card-title">Text Positioning</h2>
 			<div class="form-control">
-				<label class="label">Title Position</label>
+				<label class="label" for="title-position">Title Position</label>
 				<select
+					id="title-position"
 					class="select select-bordered w-full"
 					value={selectedTitlePosition}
-					on:change={updateTitlePosition}
+					onchange={(e) => (selectedTitlePosition = e.currentTarget.value as Position)}
 				>
 					<option value="top">Top</option>
 					<option value="center">Center</option>
@@ -136,11 +128,12 @@
 				</select>
 			</div>
 			<div class="form-control">
-				<label class="label">Description Position</label>
+				<label class="label" for="desc-position">Description Position</label>
 				<select
+					id="desc-position"
 					class="select select-bordered w-full"
 					value={selectedDescPosition}
-					on:change={updateDescPosition}
+					onchange={(e) => (selectedDescPosition = e.currentTarget.value as Position)}
 				>
 					<option value="top">Top</option>
 					<option value="center">Center</option>
@@ -166,6 +159,10 @@
 			</div>
 		</div>
 	</div>
+</div>
+
+<div class="mt-8 text-center">
+	<a href="/action-example" class="btn btn-primary">See TextFit Action Example</a>
 </div>
 
 <style>

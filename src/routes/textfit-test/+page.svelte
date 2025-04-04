@@ -1,211 +1,29 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	// @ts-expect-error No type definitions available for textfit
-	import textFit from 'textfit';
+	import { TextFit } from '$lib';
+	import { textFit } from '$lib/actions/textFit';
 
 	// Dynamic test state
-	let dynamicText = 'Edit this text to see dynamic resizing in action!';
-	let dynamicWidth = 300;
-	let dynamicHeight = 100;
-	let dynamicMinFontSize = 6;
-	let dynamicMaxFontSize = 80;
-	let dynamicAlignHoriz = false;
-	let dynamicAlignVert = false;
-	let dynamicMultiLine = true;
-	let dynamicDetectMultiLine = true;
-	let dynamicWidthOnly = false;
-	let dynamicAlignVertWithFlexbox = false;
-	let dynamicBox: HTMLElement | null = null;
-	let dynamicCurrentFontSize = 0;
+	let dynamicText = $state('Edit this text to see dynamic resizing in action!');
+	let dynamicWidth = $state(300);
+	let dynamicHeight = $state(100);
+	let dynamicMinFontSize = $state(6);
+	let dynamicMaxFontSize = $state(80);
+	let dynamicMode = $state<'single' | 'multi'>('multi');
+	let dynamicAlignHoriz = $state<'left' | 'center' | 'right'>('center');
+	let dynamicAlignVert = $state<'top' | 'middle' | 'bottom'>('middle');
+	let dynamicWidthOnly = $state(false);
+	let dynamicUseFlexbox = $state(true);
+	let dynamicPaddingX = $state(4);
+	let dynamicPaddingY = $state(2);
+	let dynamicBold = $state(false);
+	let dynamicItalic = $state(false);
+	let dynamicCurrentFontSize = $state(0);
 
-	// Add a reactive store for font size to ensure UI updates
-	import { writable } from 'svelte/store';
-	const fontSizeStore = writable(0);
-	// Subscribe to updates
-	fontSizeStore.subscribe((value) => {
-		dynamicCurrentFontSize = value;
+	// Initialize the component version
+	onMount(() => {
+		console.log('TextFit component and action initialized');
 	});
-
-	// Debounce variables
-	let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
-	let updateCount = 0;
-
-	// Function to update font size display
-	function updateFontSizeDisplay() {
-		if (!dynamicBox) return;
-
-		// TextFit creates an inner span with class "textFitted"
-		const innerSpan = dynamicBox.querySelector('.textFitted') as HTMLElement | null;
-		if (innerSpan) {
-			// Get font size directly from the innerSpan where textFit applies it
-			const inlineSize = parseFloat(innerSpan.style.fontSize);
-			if (inlineSize > 0) {
-				console.log('Reading fontSize from textFitted span:', inlineSize);
-				fontSizeStore.set(inlineSize);
-				return;
-			}
-		}
-
-		// Fallback to computed style
-		const computedStyle = window.getComputedStyle(dynamicBox);
-		const newSize = parseFloat(computedStyle.fontSize);
-
-		// Only update if size actually changed and is valid
-		if (newSize > 0 && newSize !== dynamicCurrentFontSize) {
-			console.log('Updating font size from', dynamicCurrentFontSize, 'to', newSize);
-			fontSizeStore.set(newSize);
-		}
-	}
-
-	// Initialize the textFit instance
-	function initializeTextFit() {
-		if (!dynamicBox) return;
-
-		try {
-			// Clear any existing styles to avoid conflicts
-			dynamicBox.style.fontSize = '';
-			dynamicBox.style.display = '';
-			dynamicBox.style.whiteSpace = '';
-
-			// Get a unique ID for this update for logging
-			const thisUpdateId = ++updateCount;
-			console.log(`[${thisUpdateId}] Initializing textFit with options:`, {
-				text: dynamicText.substring(0, 20) + (dynamicText.length > 20 ? '...' : ''),
-				width: dynamicWidth,
-				height: dynamicHeight,
-				minFontSize: dynamicMinFontSize,
-				maxFontSize: dynamicMaxFontSize,
-				multiLine: dynamicMultiLine,
-				widthOnly: dynamicWidthOnly
-			});
-
-			// Apply textFit with current settings
-			textFit(dynamicBox, {
-				alignVert: dynamicAlignVert,
-				alignHoriz: dynamicAlignHoriz,
-				multiLine: dynamicMultiLine,
-				detectMultiLine: dynamicDetectMultiLine,
-				minFontSize: dynamicMinFontSize,
-				maxFontSize: dynamicMaxFontSize,
-				widthOnly: dynamicWidthOnly,
-				alignVertWithFlexbox: dynamicAlignVertWithFlexbox,
-				reProcess: true // Important: always reprocess
-			});
-
-			// Set up a MutationObserver to watch for style changes on the innerSpan
-			setTimeout(() => {
-				const innerSpan = dynamicBox?.querySelector('.textFitted') as HTMLElement | null;
-				if (innerSpan) {
-					console.log(
-						`[${thisUpdateId}] Found innerSpan, current fontSize:`,
-						innerSpan.style.fontSize
-					);
-					// Get size directly from the element where textFit applies it
-					const size = parseFloat(innerSpan.style.fontSize);
-					if (size > 0) {
-						console.log(`[${thisUpdateId}] Setting fontSize from innerSpan:`, size);
-						fontSizeStore.set(size);
-					}
-				} else {
-					console.log(`[${thisUpdateId}] No innerSpan found`);
-				}
-			}, 50);
-		} catch (error) {
-			console.error('Error initializing textFit:', error);
-		}
-	}
-
-	// Update function to trigger a fit with debouncing
-	function updateTextFit(fullReset = false) {
-		if (!dynamicBox) return;
-
-		// Cancel previous timeout
-		if (resizeTimeout) {
-			clearTimeout(resizeTimeout);
-		}
-
-		// For options that require a complete reset, clear all previous styles first
-		if (fullReset) {
-			if (dynamicBox) {
-				// Reset all potentially modified styles
-				dynamicBox.style.fontSize = '';
-				dynamicBox.style.display = '';
-				dynamicBox.style.whiteSpace = '';
-				dynamicBox.style.textAlign = '';
-			}
-		}
-
-		// Debounce the fit operation
-		resizeTimeout = setTimeout(() => {
-			initializeTextFit();
-		}, 100);
-	}
-
-	// This function is called when the dynamic box element is bound
-	function handleDynamicBoxBinding(node: HTMLElement) {
-		dynamicBox = node;
-		console.log('Dynamic box bound:', dynamicBox);
-
-		// Create mutation observer to detect changes to the DOM
-		const observer = new MutationObserver((mutations) => {
-			mutations.forEach((mutation) => {
-				if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-					// Check if a textFitted span was added
-					if (!dynamicBox) return;
-					const innerSpan = dynamicBox.querySelector('.textFitted') as HTMLElement | null;
-					if (innerSpan) {
-						const size = parseFloat(innerSpan.style.fontSize);
-						if (size > 0) {
-							console.log('MutationObserver detected font size change:', size);
-							fontSizeStore.set(size);
-						}
-					}
-				}
-			});
-		});
-
-		// Start observing the dynamicBox for DOM changes
-		observer.observe(node, {
-			childList: true,
-			subtree: true,
-			attributes: true,
-			attributeFilter: ['style']
-		});
-
-		// Initial fit after a short delay to ensure the DOM is ready
-		setTimeout(() => {
-			initializeTextFit();
-		}, 100);
-
-		// Return a cleanup function
-		return {
-			destroy() {
-				observer.disconnect();
-			}
-		};
-	}
-
-	// Force UI to update font size (for debugging)
-	function forceUpdateFontSize() {
-		if (!dynamicBox) return;
-
-		// Try to get size from textFitted span first
-		const innerSpan = dynamicBox.querySelector('.textFitted') as HTMLElement | null;
-		if (innerSpan) {
-			const size = parseFloat(innerSpan.style.fontSize);
-			if (size > 0) {
-				console.log('Force update - fontSize from innerSpan:', size);
-				fontSizeStore.set(size);
-				return;
-			}
-		}
-
-		// Fallback to computed style
-		const computedStyle = window.getComputedStyle(dynamicBox);
-		const newSize = parseFloat(computedStyle.fontSize);
-		fontSizeStore.set(newSize);
-		console.log('Force update - fontSize from computed style:', newSize);
-	}
 
 	// Basic test cases
 	const testCases = [
@@ -217,7 +35,7 @@
 			height: 40,
 			minFontSize: 6,
 			maxFontSize: 50,
-			multiLine: false
+			mode: 'single' as const
 		},
 		{
 			id: 2,
@@ -227,7 +45,7 @@
 			height: 80,
 			minFontSize: 8,
 			maxFontSize: 40,
-			multiLine: true
+			mode: 'multi' as const
 		},
 		{
 			id: 3,
@@ -237,7 +55,7 @@
 			height: 60,
 			minFontSize: 6,
 			maxFontSize: 30,
-			multiLine: true
+			mode: 'multi' as const
 		},
 		{
 			id: 4,
@@ -247,164 +65,27 @@
 			height: 50,
 			minFontSize: 8,
 			maxFontSize: 40,
-			widthOnly: true
+			widthOnly: true,
+			mode: 'multi' as const
 		},
 		{
 			id: 5,
-			title: 'Single line mode',
-			text: 'This text will not wrap to multiple lines',
-			width: 180,
-			height: 40,
-			minFontSize: 6,
+			title: 'Horizontal and vertical alignment',
+			text: 'Centered text with flex alignment',
+			width: 200,
+			height: 100,
+			minFontSize: 10,
 			maxFontSize: 30,
-			multiLine: false
-		},
-		{
-			id: 6,
-			title: 'Centered horizontally and vertically',
-			text: 'This text is centered in both directions',
-			width: 200,
-			height: 100,
-			minFontSize: 10,
-			maxFontSize: 40,
-			alignHoriz: true,
-			alignVert: true
-		},
-		{
-			id: 7,
-			title: 'Flexbox vertical alignment',
-			text: 'This text uses flexbox for better vertical centering',
-			width: 200,
-			height: 100,
-			minFontSize: 10,
-			maxFontSize: 40,
-			alignHoriz: true,
-			alignVert: true,
-			alignVertWithFlexbox: true
+			alignHoriz: 'center' as const,
+			alignVert: 'middle' as const,
+			mode: 'multi' as const
 		}
 	];
-
-	onMount(() => {
-		// Initialize test cases
-		const testElements = document.querySelectorAll<HTMLElement>('.test-textfit');
-		console.log(`Found ${testElements.length} test case elements`);
-
-		Array.from(testElements).forEach((element, index) => {
-			const test = testCases[index];
-
-			// Apply textFit with test case settings
-			textFit(element, {
-				alignVert: test.alignVert || false,
-				alignHoriz: test.alignHoriz || false,
-				multiLine: test.multiLine,
-				minFontSize: test.minFontSize,
-				maxFontSize: test.maxFontSize,
-				widthOnly: test.widthOnly || false,
-				alignVertWithFlexbox: test.alignVertWithFlexbox || false
-			});
-		});
-
-		// Basic test
-		const basicTest = document.querySelector<HTMLElement>('.basic-test');
-		if (basicTest) {
-			textFit(basicTest);
-		}
-
-		return () => {
-			// Clean up
-			if (resizeTimeout) {
-				clearTimeout(resizeTimeout);
-			}
-		};
-	});
-
-	// Handler functions for form controls
-	function handleTextChange(e: Event) {
-		const target = e.target as HTMLTextAreaElement;
-		dynamicText = target.value;
-		updateTextFit();
-	}
-
-	function handleWidthChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicWidth = parseInt(target.value, 10);
-		updateTextFit();
-	}
-
-	function handleHeightChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicHeight = parseInt(target.value, 10);
-		updateTextFit();
-	}
-
-	function handleMinFontSizeChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicMinFontSize = parseInt(target.value, 10);
-		updateTextFit();
-	}
-
-	function handleMaxFontSizeChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicMaxFontSize = parseInt(target.value, 10);
-		updateTextFit();
-	}
-
-	function handleAlignHorizChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicAlignHoriz = target.checked;
-		updateTextFit(true);
-	}
-
-	function handleAlignVertChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicAlignVert = target.checked;
-		updateTextFit(true);
-	}
-
-	function handleMultiLineChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicMultiLine = target.checked;
-		// This is a critical setting that needs full reset
-		updateTextFit(true);
-	}
-
-	function handleDetectMultiLineChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicDetectMultiLine = target.checked;
-		updateTextFit(true);
-	}
-
-	function handleWidthOnlyChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicWidthOnly = target.checked;
-		// This is a critical setting that needs full reset
-		updateTextFit(true);
-	}
-
-	function handleAlignVertWithFlexboxChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		dynamicAlignVertWithFlexbox = target.checked;
-		updateTextFit(true);
-	}
-
-	function forceFit() {
-		// Force a complete re-initialization
-		if (dynamicBox) {
-			// Reset all styling
-			dynamicBox.style.fontSize = '';
-			dynamicBox.style.display = '';
-			dynamicBox.style.whiteSpace = '';
-			dynamicBox.style.textAlign = '';
-		}
-		initializeTextFit();
-
-		// Force an update of the font size display
-		setTimeout(forceUpdateFontSize, 150);
-	}
 </script>
 
 <div class="container mx-auto p-4">
-	<h1 class="mb-4 text-2xl font-bold">TextFit Component Test Page</h1>
+	<h1 class="mb-4 text-2xl font-bold">TextFit Test Page</h1>
+	<p class="mb-8">This page demonstrates our custom Svelte 5 implementation of TextFit.</p>
 
 	<!-- Dynamic Interactive Test -->
 	<div class="mb-8 rounded border p-4">
@@ -419,7 +100,7 @@
 						id="dynamic-text"
 						class="textarea textarea-bordered h-24"
 						value={dynamicText}
-						on:input={handleTextChange}
+						oninput={(e) => (dynamicText = e.currentTarget.value)}
 					></textarea>
 				</div>
 
@@ -432,7 +113,7 @@
 							min="50"
 							max="500"
 							value={dynamicWidth}
-							on:input={handleWidthChange}
+							oninput={(e) => (dynamicWidth = parseInt(e.currentTarget.value))}
 						/>
 						<div class="text-center">{dynamicWidth}px</div>
 					</div>
@@ -445,7 +126,7 @@
 							min="30"
 							max="300"
 							value={dynamicHeight}
-							on:input={handleHeightChange}
+							oninput={(e) => (dynamicHeight = parseInt(e.currentTarget.value))}
 						/>
 						<div class="text-center">{dynamicHeight}px</div>
 					</div>
@@ -456,9 +137,9 @@
 							id="dynamic-min-font-size"
 							type="range"
 							min="4"
-							max="40"
+							max="24"
 							value={dynamicMinFontSize}
-							on:input={handleMinFontSizeChange}
+							oninput={(e) => (dynamicMinFontSize = parseInt(e.currentTarget.value))}
 						/>
 						<div class="text-center">{dynamicMinFontSize}px</div>
 					</div>
@@ -468,202 +149,287 @@
 						<input
 							id="dynamic-max-font-size"
 							type="range"
-							min="20"
+							min="24"
 							max="120"
 							value={dynamicMaxFontSize}
-							on:input={handleMaxFontSizeChange}
+							oninput={(e) => (dynamicMaxFontSize = parseInt(e.currentTarget.value))}
 						/>
 						<div class="text-center">{dynamicMaxFontSize}px</div>
 					</div>
 
 					<div class="form-control">
-						<label class="label cursor-pointer justify-start gap-2">
+						<label class="label" for="dynamic-padding-x">Padding X (px)</label>
+						<input
+							id="dynamic-padding-x"
+							type="range"
+							min="0"
+							max="20"
+							value={dynamicPaddingX}
+							oninput={(e) => (dynamicPaddingX = parseInt(e.currentTarget.value))}
+						/>
+						<div class="text-center">{dynamicPaddingX}px</div>
+					</div>
+
+					<div class="form-control">
+						<label class="label" for="dynamic-padding-y">Padding Y (px)</label>
+						<input
+							id="dynamic-padding-y"
+							type="range"
+							min="0"
+							max="20"
+							value={dynamicPaddingY}
+							oninput={(e) => (dynamicPaddingY = parseInt(e.currentTarget.value))}
+						/>
+						<div class="text-center">{dynamicPaddingY}px</div>
+					</div>
+
+					<div class="form-control">
+						<label class="label" for="dynamic-mode">Text Mode</label>
+						<select
+							id="dynamic-mode"
+							class="select select-bordered w-full"
+							value={dynamicMode}
+							onchange={(e) => (dynamicMode = e.currentTarget.value as 'single' | 'multi')}
+						>
+							<option value="single">Single Line</option>
+							<option value="multi">Multi Line</option>
+						</select>
+					</div>
+
+					<div class="form-control">
+						<label class="label" for="dynamic-align-horiz">Horizontal Alignment</label>
+						<select
+							id="dynamic-align-horiz"
+							class="select select-bordered w-full"
+							value={dynamicAlignHoriz}
+							onchange={(e) =>
+								(dynamicAlignHoriz = e.currentTarget.value as 'left' | 'center' | 'right')}
+						>
+							<option value="left">Left</option>
+							<option value="center">Center</option>
+							<option value="right">Right</option>
+						</select>
+					</div>
+
+					<div class="form-control">
+						<label class="label" for="dynamic-align-vert">Vertical Alignment</label>
+						<select
+							id="dynamic-align-vert"
+							class="select select-bordered w-full"
+							value={dynamicAlignVert}
+							onchange={(e) =>
+								(dynamicAlignVert = e.currentTarget.value as 'top' | 'middle' | 'bottom')}
+						>
+							<option value="top">Top</option>
+							<option value="middle">Middle</option>
+							<option value="bottom">Bottom</option>
+						</select>
+					</div>
+
+					<div class="form-control">
+						<label class="label cursor-pointer justify-start gap-2" for="dynamic-bold">
 							<input
+								id="dynamic-bold"
 								type="checkbox"
 								class="checkbox"
-								checked={dynamicAlignHoriz}
-								on:change={handleAlignHorizChange}
+								checked={dynamicBold}
+								onchange={(e) => (dynamicBold = e.currentTarget.checked)}
 							/>
-							<span class="label-text">Align Horizontally</span>
+							<span class="label-text">Bold</span>
 						</label>
 					</div>
 
 					<div class="form-control">
-						<label class="label cursor-pointer justify-start gap-2">
+						<label class="label cursor-pointer justify-start gap-2" for="dynamic-italic">
 							<input
+								id="dynamic-italic"
 								type="checkbox"
 								class="checkbox"
-								checked={dynamicAlignVert}
-								on:change={handleAlignVertChange}
+								checked={dynamicItalic}
+								onchange={(e) => (dynamicItalic = e.currentTarget.checked)}
 							/>
-							<span class="label-text">Align Vertically</span>
+							<span class="label-text">Italic</span>
 						</label>
 					</div>
 
 					<div class="form-control">
-						<label class="label cursor-pointer justify-start gap-2">
+						<label class="label cursor-pointer justify-start gap-2" for="dynamic-width-only">
 							<input
-								type="checkbox"
-								class="checkbox"
-								checked={dynamicMultiLine}
-								on:change={handleMultiLineChange}
-							/>
-							<span class="label-text">Multi-line</span>
-						</label>
-					</div>
-
-					<div class="form-control">
-						<label class="label cursor-pointer justify-start gap-2">
-							<input
-								type="checkbox"
-								class="checkbox"
-								checked={dynamicDetectMultiLine}
-								on:change={handleDetectMultiLineChange}
-							/>
-							<span class="label-text">Auto-detect Multi-line</span>
-						</label>
-					</div>
-
-					<div class="form-control">
-						<label class="label cursor-pointer justify-start gap-2">
-							<input
+								id="dynamic-width-only"
 								type="checkbox"
 								class="checkbox"
 								checked={dynamicWidthOnly}
-								on:change={handleWidthOnlyChange}
+								onchange={(e) => (dynamicWidthOnly = e.currentTarget.checked)}
 							/>
-							<span class="label-text">Width-only Mode</span>
+							<span class="label-text">Width Only</span>
 						</label>
 					</div>
 
 					<div class="form-control">
-						<label class="label cursor-pointer justify-start gap-2">
+						<label class="label cursor-pointer justify-start gap-2" for="dynamic-use-flexbox">
 							<input
+								id="dynamic-use-flexbox"
 								type="checkbox"
 								class="checkbox"
-								checked={dynamicAlignVertWithFlexbox}
-								on:change={handleAlignVertWithFlexboxChange}
+								checked={dynamicUseFlexbox}
+								onchange={(e) => (dynamicUseFlexbox = e.currentTarget.checked)}
 							/>
-							<span class="label-text">Align Vert (Flexbox)</span>
+							<span class="label-text">Use Flexbox</span>
 						</label>
 					</div>
-				</div>
-
-				<div class="flex gap-2">
-					<button class="btn btn-primary" on:click={forceFit}>Force Fit</button>
-					<button class="btn" on:click={forceUpdateFontSize}>Update Font Size</button>
 				</div>
 			</div>
 
 			<!-- Preview -->
 			<div class="flex flex-col items-center justify-center">
-				<div
-					class="border-primary flex items-center justify-center rounded border-2 border-dashed"
-					style="width: {dynamicWidth}px; height: {dynamicHeight}px;"
-				>
+				<div class="mb-8">
+					<h3 class="mb-4 text-lg font-semibold">Component Implementation</h3>
 					<div
-						use:handleDynamicBoxBinding
-						class="textfit-element h-full w-full"
-						style={`
-							${dynamicAlignHoriz ? 'text-align: center;' : ''}
-							${dynamicAlignVert && dynamicAlignVertWithFlexbox ? 'display: flex; justify-content: center; align-items: center;' : ''}
-						`}
+						class="border-primary rounded border-2 border-dashed"
+						style="width: {dynamicWidth}px; height: {dynamicHeight}px;"
 					>
-						{dynamicText}
+						<TextFit
+							text={dynamicText}
+							width={dynamicWidth}
+							height={dynamicHeight}
+							minFontSize={dynamicMinFontSize}
+							maxFontSize={dynamicMaxFontSize}
+							mode={dynamicMode}
+							alignHoriz={dynamicAlignHoriz}
+							alignVert={dynamicAlignVert}
+							paddingX={dynamicPaddingX}
+							paddingY={dynamicPaddingY}
+							widthOnly={dynamicWidthOnly}
+							useFlexbox={dynamicUseFlexbox}
+							bold={dynamicBold}
+							italic={dynamicItalic}
+							bind:currentFontSize={dynamicCurrentFontSize}
+						/>
+					</div>
+					<div class="mt-1 text-sm font-medium text-purple-600">
+						Calculated Font Size: {dynamicCurrentFontSize.toFixed(1)}px
 					</div>
 				</div>
-				<div class="mt-2 text-sm">
-					Container: {dynamicWidth}px × {dynamicHeight}px
-					{#if dynamicWidthOnly}
-						<span class="ml-2 text-xs font-medium text-blue-500">(Width-only mode)</span>
-					{/if}
-					{#if !dynamicMultiLine}
-						<span class="ml-2 text-xs font-medium text-orange-500">(Single-line)</span>
-					{/if}
-				</div>
-				<div class="mt-1 text-sm font-medium text-purple-600">
-					Calculated Font Size: {dynamicCurrentFontSize.toFixed(2)}px
-				</div>
-			</div>
-		</div>
-	</div>
 
-	<!-- Basic Test -->
-	<div class="mb-8 rounded border p-4">
-		<h2 class="mb-2 text-xl">Basic Test</h2>
-		<div style="border: 1px dashed #999; width: 200px; height: 100px; position: relative;">
-			<div class="basic-test" style="width: 100%; height: 100%;">
-				Basic test to verify TextFit is working
+				<div>
+					<h3 class="mb-4 text-lg font-semibold">Action Implementation</h3>
+					<div
+						class="border-secondary rounded border-2 border-dashed"
+						style="width: {dynamicWidth}px; height: {dynamicHeight}px;"
+					>
+						<div
+							class="flex h-full w-full text-center"
+							use:textFit={{
+								text: dynamicText,
+								minFontSize: dynamicMinFontSize,
+								maxFontSize: dynamicMaxFontSize,
+								mode: dynamicMode,
+								alignHoriz: dynamicAlignHoriz,
+								alignVert: dynamicAlignVert,
+								widthOnly: dynamicWidthOnly,
+								paddingX: dynamicPaddingX,
+								paddingY: dynamicPaddingY
+							}}
+						>
+							{dynamicText}
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Test Cases -->
 	<div class="mb-8 rounded border p-4">
-		<h2 class="mb-2 text-xl">Test Cases</h2>
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+		<h2 class="mb-4 text-xl">Test Cases</h2>
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 			{#each testCases as test (test.id)}
-				<div class="border p-2">
-					<h3 class="text-sm font-bold">{test.title}</h3>
-					<div
-						style={`border: 1px dashed #999; width: ${test.width}px; height: ${test.height}px; position: relative;`}
-					>
-						<div
-							class="test-textfit"
-							style={`
-								width: 100%; 
-								height: 100%;
-								${test.alignHoriz ? 'text-align: center;' : ''}
-								${test.alignVert && test.alignVertWithFlexbox ? 'display: flex; justify-content: center; align-items: center;' : ''}
-							`}
-						>
-							{test.text}
+				<div class="card bg-base-200 shadow-md">
+					<div class="card-body p-4">
+						<h3 class="card-title text-base">{test.title}</h3>
+						<div class="mt-2 text-xs text-gray-500">
+							{test.width}×{test.height}, {test.minFontSize}-{test.maxFontSize}px
 						</div>
-					</div>
-					<div class="mt-1 text-xs">
-						Size: {test.width}×{test.height}px Min: {test.minFontSize}px, Max: {test.maxFontSize}px
-						{#if test.widthOnly}
-							<span class="ml-1">(Width-only)</span>
-						{/if}
-						{#if test.multiLine === false}
-							<span class="ml-1">(Single-line)</span>
-						{/if}
+						<!-- Component version -->
+						<div
+							class="border-primary mt-2 rounded border"
+							style="width: {test.width}px; height: {test.height}px;"
+						>
+							<TextFit
+								text={test.text}
+								width={test.width}
+								height={test.height}
+								minFontSize={test.minFontSize}
+								maxFontSize={test.maxFontSize}
+								mode={test.mode}
+								alignHoriz={test.alignHoriz ?? 'center'}
+								alignVert={test.alignVert ?? 'middle'}
+								widthOnly={test.widthOnly}
+							/>
+						</div>
 					</div>
 				</div>
 			{/each}
 		</div>
 	</div>
 
-	<!-- API Information -->
+	<!-- Usage Examples -->
 	<div class="mb-8 rounded border p-4">
-		<h2 class="mb-2 text-xl">TextFit Options</h2>
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<div class="border p-2">
-				<h3 class="text-sm font-bold">Default Settings</h3>
-				<pre class="mt-2 text-xs whitespace-pre-wrap">
-{`{
-    alignVert: false, // if true, vertically aligns text using CSS tables
-    alignHoriz: false, // if true, sets text-align: center
-    multiLine: false, // if true, doesn't set white-space: no-wrap
-    detectMultiLine: true, // auto-detect multi-line text
-    minFontSize: 6,
-    maxFontSize: 80,
-    reProcess: true, // re-processes elements already processed
-    widthOnly: false, // fit to width only, ignoring height
-    alignVertWithFlexbox: false, // use flexbox for vertical alignment
-}`}
-				</pre>
-			</div>
-			<div class="border p-2">
-				<h3 class="text-sm font-bold">Features</h3>
-				<ul class="list-disc pl-5">
-					<li>Fast binary search algorithm - most fits complete in &lt;1ms</li>
-					<li>Supports both horizontal and vertical centering</li>
-					<li>Supports padding, multiple fonts, and multiline text</li>
-					<li>No dependencies - small size (1.5KB gzipped)</li>
-					<li>Supports IE9+ and all modern browsers</li>
-				</ul>
-			</div>
+		<h2 class="mb-4 text-xl">Usage Examples</h2>
+
+		<div class="mb-4">
+			<h3 class="mb-2 text-lg">Component Usage</h3>
+			<pre class="bg-base-300 overflow-x-auto rounded p-4">
+{`<TextFit
+  text="Your text here"
+  width={300}
+  height={100}
+  minFontSize={6}
+  maxFontSize={48}
+  mode="multi"
+  alignHoriz="center"
+  alignVert="middle"
+/>`}</pre>
 		</div>
+
+		<div class="mb-4">
+			<h3 class="mb-2 text-lg">Action Usage</h3>
+			<pre class="bg-base-300 overflow-x-auto rounded p-4">
+{`<div
+  use:textFit={{
+    text: "Your text here",
+    minFontSize: 6,
+    maxFontSize: 48,
+    mode: "multi"
+  }}
+>
+  Your text here
+</div>`}</pre>
+		</div>
+
+		<div>
+			<h3 class="mb-2 text-lg">Utility Function Usage</h3>
+			<pre class="bg-base-300 overflow-x-auto rounded p-4">
+{`// Direct calculation
+const result = calculateTextFit(
+  element,
+  "Your text here",
+  300,
+  100,
+  { maxFontSize: 48 }
+);
+
+// Automatic with ResizeObserver
+const cleanup = applyTextFit(
+  textElement,
+  containerElement,
+  "Your text here",
+  { mode: "multi" }
+);`}</pre>
+		</div>
+	</div>
+
+	<div class="mt-8 text-center">
+		<a href="/" class="btn btn-primary">Back to Main Page</a>
 	</div>
 </div>

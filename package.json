@@ -36,6 +36,6 @@
 		"vite": "^6.0.0"
 	},
 	"dependencies": {
-		"textfit": "^2.4.0"
+	
 	}
 }
