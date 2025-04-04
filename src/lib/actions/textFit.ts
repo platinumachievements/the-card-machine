@@ -121,7 +121,10 @@ export const textFit: Action<HTMLElement, TextFitActionParams> = (
         lastParams.text !== newParams.text ||
         lastParams.minFontSize !== newParams.minFontSize ||
         lastParams.maxFontSize !== newParams.maxFontSize ||
-        lastParams.mode !== newParams.mode;
+        lastParams.mode !== newParams.mode ||
+        lastParams.alignHoriz !== newParams.alignHoriz ||
+        lastParams.alignVert !== newParams.alignVert ||
+        lastParams.widthOnly !== newParams.widthOnly;
         
       lastParams = { ...newParams };
       
