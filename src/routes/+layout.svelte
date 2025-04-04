@@ -56,7 +56,7 @@
 			<div class="navbar-end">
 				<!-- Theme toggle -->
 				<label class="swap swap-rotate mr-2">
-					<input type="checkbox" checked={darkMode} on:change={toggleTheme} />
+					<input type="checkbox" checked={darkMode} onchange={toggleTheme} />
 					<!-- Sun icon -->
 					<svg
 						class="swap-off h-6 w-6 fill-current"
@@ -79,7 +79,7 @@
 
 				<!-- Notifications -->
 				<div class="dropdown dropdown-end">
-					<div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+					<button class="btn btn-ghost btn-circle">
 						<div class="indicator">
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -96,11 +96,8 @@
 							>
 							<span class="badge badge-xs badge-primary indicator-item"></span>
 						</div>
-					</div>
-					<div
-						tabindex="0"
-						class="card dropdown-content card-compact bg-base-200 z-[1] mt-3 w-52 shadow"
-					>
+					</button>
+					<div class="card dropdown-content card-compact bg-base-200 z-[1] mt-3 w-52 shadow">
 						<div class="card-body">
 							<span class="text-lg font-bold">Notifications</span>
 							<span class="text-info">You have 1 unread message</span>
@@ -113,23 +110,22 @@
 
 				<!-- Avatar -->
 				<div class="dropdown dropdown-end">
-					<div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+					<button class="btn btn-ghost btn-circle avatar">
 						<div class="w-10 rounded-full">
 							<img alt="Avatar" src="https://picsum.photos/200/200?random=1" />
 						</div>
-					</div>
+					</button>
 					<ul
-						tabindex="0"
 						class="menu menu-sm dropdown-content bg-base-200 rounded-box z-[1] mt-3 w-52 p-2 shadow"
 					>
 						<li>
-							<a class="justify-between">
+							<a href="/profile" class="justify-between">
 								Profile
 								<span class="badge badge-primary badge-sm">New</span>
 							</a>
 						</li>
-						<li><a>Settings</a></li>
-						<li><a>Logout</a></li>
+						<li><a href="/settings">Settings</a></li>
+						<li><a href="/logout">Logout</a></li>
 					</ul>
 				</div>
 			</div>

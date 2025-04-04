@@ -13,8 +13,6 @@ export interface TextFitOptions {
   useFlexbox?: boolean;
   reProcess?: boolean;
   widthOnly?: boolean;
-  paddingX?: number;
-  paddingY?: number;
 }
 
 export interface TextFitResult {
@@ -30,9 +28,7 @@ const defaultOptions: TextFitOptions = {
   alignVert: 'middle',
   useFlexbox: true,
   reProcess: true,
-  widthOnly: false,
-  paddingX: 4,
-  paddingY: 2
+  widthOnly: false
 };
 
 /**
@@ -54,8 +50,6 @@ export function calculateTextFit(
     maxFontSize,
     mode,
     widthOnly,
-    paddingX,
-    paddingY
   } = mergedOptions;
 
   if (!element || !width || !height) {
@@ -79,15 +73,33 @@ export function calculateTextFit(
   // Set the text content for the calculation
   element.textContent = text;
 
-  const availableWidth = width - (paddingX! * 2);
-  const availableHeight = height - (paddingY! * 2);
+  const availableWidth = width;
+  const availableHeight = height;
   const lineHeightRatio = 1.2;
 
   let low = minFontSize!;
   let high = maxFontSize!;
-  let optimalFontSize = minFontSize!;
+  let optimalFontSize = maxFontSize!;  // Initially assume the maximum font size
 
-  // Binary search for the best font size
+  // First check if the maximum size fits
+  element.style.fontSize = `${high}px`;
+  element.style.lineHeight = `${Math.max(high * lineHeightRatio, 1)}px`;
+
+  const maxContentWidth = element.scrollWidth;
+  const maxContentHeight = element.scrollHeight;
+
+  const maxFits = (maxContentWidth <= availableWidth) && 
+                  (widthOnly || maxContentHeight <= availableHeight);
+
+  if (maxFits) {
+    // Maximum size already fits, no need for binary search
+    return {
+      fontSize: high,
+      lineHeight: Math.max(high * lineHeightRatio, 1)
+    };
+  }
+
+  // Binary search for the best fit
   while (low <= high) {
     const mid = Math.floor((low + high) / 2);
     element.style.fontSize = `${mid}px`;

@@ -5,6 +5,13 @@
 	let maxFontSize = $state(48);
 	let minFontSize = $state(8);
 	let mode = $state<'single' | 'multi'>('multi');
+
+	// Ensure minFontSize never exceeds maxFontSize
+	$effect(() => {
+		if (minFontSize > maxFontSize) {
+			minFontSize = maxFontSize;
+		}
+	});
 </script>
 
 <h1 class="mb-8 text-3xl font-bold">TextFit Action Example</h1>
@@ -28,7 +35,7 @@
 				id="min-font-size"
 				type="range"
 				min="4"
-				max="100"
+				max="24"
 				class="range"
 				value={minFontSize}
 				oninput={(e) => (minFontSize = parseInt(e.currentTarget.value))}
@@ -40,7 +47,7 @@
 			<input
 				id="max-font-size"
 				type="range"
-				min="4"
+				min="24"
 				max="100"
 				class="range"
 				value={maxFontSize}

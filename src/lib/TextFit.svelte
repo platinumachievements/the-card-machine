@@ -19,8 +19,6 @@
 		useFlexbox = true,
 		reProcess = true,
 		widthOnly = false,
-		paddingX = 4,
-		paddingY = 2,
 		color = 'inherit',
 		bold = false,
 		italic = false,
@@ -73,9 +71,7 @@
 				minFontSize,
 				maxFontSize,
 				mode,
-				widthOnly,
-				paddingX,
-				paddingY
+				widthOnly
 			};
 
 			const result = calculateTextFit(textElement, text, width, height, options);
@@ -128,7 +124,6 @@
 	style="
 		width: {width}px;
 		height: {height}px;
-		padding: {paddingY}px {paddingX}px;
 	"
 >
 	<div

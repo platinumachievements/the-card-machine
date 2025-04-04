@@ -32,6 +32,36 @@ export const textFit: Action<HTMLElement, TextFitActionParams> = (
     
     if (!containerWidth || !containerHeight) return;
     
+    // Setup container styles
+    node.style.overflow = 'hidden';
+    node.style.display = 'flex';
+    node.style.alignItems = 'center';
+    node.style.justifyContent = 'center';
+    node.style.boxSizing = 'border-box';
+    
+    // Apply horizontal alignment
+    if (params.alignHoriz === 'left') {
+      node.style.justifyContent = 'flex-start';
+      node.style.textAlign = 'left';
+    } else if (params.alignHoriz === 'right') {
+      node.style.justifyContent = 'flex-end';
+      node.style.textAlign = 'right';
+    } else {
+      // Default to center
+      node.style.justifyContent = 'center';
+      node.style.textAlign = 'center';
+    }
+    
+    // Apply vertical alignment
+    if (params.alignVert === 'top') {
+      node.style.alignItems = 'flex-start';
+    } else if (params.alignVert === 'bottom') {
+      node.style.alignItems = 'flex-end';
+    } else {
+      // Default to middle
+      node.style.alignItems = 'center';
+    }
+    
     // Set text content for calculation
     // Store the original content if needed for later restoration
     const originalText = node.textContent;
@@ -50,9 +80,7 @@ export const textFit: Action<HTMLElement, TextFitActionParams> = (
         minFontSize: params.minFontSize,
         maxFontSize: params.maxFontSize,
         mode: params.mode,
-        widthOnly: params.widthOnly,
-        paddingX: params.paddingX,
-        paddingY: params.paddingY
+        widthOnly: params.widthOnly
       }
     );
     
@@ -66,6 +94,10 @@ export const textFit: Action<HTMLElement, TextFitActionParams> = (
       } else {
         node.style.whiteSpace = 'normal';
       }
+      
+      // Ensure text doesn't overflow
+      node.style.wordBreak = 'break-word';
+      node.style.width = '100%';
     }
   }
   
