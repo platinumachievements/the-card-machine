@@ -262,21 +262,23 @@
 						class="border-primary rounded border-2 border-dashed"
 						style="width: {dynamicWidth}px; height: {dynamicHeight}px;"
 					>
-						<TextFit
-							text={dynamicText}
-							width={dynamicWidth}
-							height={dynamicHeight}
-							minFontSize={dynamicMinFontSize}
-							maxFontSize={dynamicMaxFontSize}
-							mode={dynamicMode}
-							alignHoriz={dynamicAlignHoriz}
-							alignVert={dynamicAlignVert}
-							widthOnly={dynamicWidthOnly}
-							useFlexbox={dynamicUseFlexbox}
-							bold={dynamicBold}
-							italic={dynamicItalic}
-							bind:currentFontSize={dynamicCurrentFontSize}
-						/>
+						<div class="flex h-full w-full text-center">
+							<TextFit
+								text={dynamicText}
+								width={dynamicWidth}
+								height={dynamicHeight}
+								minFontSize={dynamicMinFontSize}
+								maxFontSize={dynamicMaxFontSize}
+								mode={dynamicMode}
+								alignHoriz={dynamicAlignHoriz}
+								alignVert={dynamicAlignVert}
+								widthOnly={dynamicWidthOnly}
+								useFlexbox={dynamicUseFlexbox}
+								bold={dynamicBold}
+								italic={dynamicItalic}
+								bind:currentFontSize={dynamicCurrentFontSize}
+							/>
+						</div>
 					</div>
 					<div class="mt-1 text-sm font-medium text-purple-600">
 						Calculated Font Size: {dynamicCurrentFontSize.toFixed(1)}px
